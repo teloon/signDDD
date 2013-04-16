@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 #-*- coding:utf8 -*-
 
+"""This module implements the hashcode generation algorithm for the
+text. This algorithm is based on the idea of `signature file <http://en.wikipedia.org/wiki/Signature_file/>`_.
+The hashcode of the text can't be optimized by getting a better word
+hashcode map, e.g. the method provided in `this paper <http://dl.acm.org/citation.cfm?id=2348339>`_.
+
+"""
+
 import itertools, hashlib, os
-from extracted_tknz import Tokenizer
+from tokenizer import Tokenizer
 from glo import PUNCS_PATH
 from glo import STOPWORDS_PATH
 from glo import CODE_WIDTH
@@ -13,6 +20,11 @@ from lib import pad_bin_code
 DEBUG_BINARY_INFO = 0
 
 def gen_corpus_hashcode(corpus_path, out_path, word_hashcode_path="", encoding="utf8"):
+    """Generate hashcodes for the all the sentences in the corpus file.
+    if the parameter ``word_hashcode_path`` is provided, the word hashcode dictionary
+    will be extracted.
+
+    """
     out_f = open(out_path, "w")
     word_codes_dict = {}
     puncs = load_punc()
@@ -22,23 +34,19 @@ def gen_corpus_hashcode(corpus_path, out_path, word_hashcode_path="", encoding="
         word_codes_dict = load_word_hashcode(word_hashcode_path, encoding=encoding)
     for ln in open(corpus_path):
         txt = ln.strip().decode(encoding)
-        hash_code = do_gen_sent_hashcode(txt, word_codes_dict, rand_code_dict, puncs, stopwords)
+        hash_code = gen_sent_hashcode(txt, word_codes_dict, rand_code_dict, puncs, stopwords)
         out_f.write("%d\n" % hash_code)
 #        print pad_bin_code(hash_code,32)
     out_f.close()
     return
 
-def do_gen_sent_hashcode(txt, word_codes_dict, rand_code_dict, puncs, stopwords):
-    """naive approach of hashing text: original "signiture-indexing"
+def gen_sent_hashcode(txt, word_codes_dict, rand_code_dict, puncs, stopwords):
+    """Generate hashcode for the ``txt``. When deciding the hashcode of each
+    word in the ``txt``, look up the word in ``word_codes_dict``:
 
-    Args:
-        txt: text needed to be hashed
-        CODE_WIDTH: hashcode width, <=64
-        BIT_SET: number of bits set in hashcode
-        use_optmz: flag indicating whether to use optimized words hashcode
-
-    Returns:
-        hash_val: an integer, corresponding to the hash code of txt(binary), e.g.: 5(000000000000101)
+        - If existing, fetch the hashcode from map;
+        - If not existing, use its MD5 value to randomly select its hashcode
+          from ``rand_code_dict``.
 
     """
     #generate txt's hash code
@@ -80,6 +88,10 @@ def do_gen_sent_hashcode(txt, word_codes_dict, rand_code_dict, puncs, stopwords)
 
 
 def load_word_hashcode(word_hashcode_path, encoding="utf8"):
+    """Load the words' hashcode from ``word_hashcode_path``.
+    Return a dictionary whose key is word and value is hashcode.
+
+    """
     word_codes_dict = {}
     for ln in open(word_hashcode_path):
         ln = ln.decode(encoding)
@@ -88,6 +100,10 @@ def load_word_hashcode(word_hashcode_path, encoding="utf8"):
     return word_codes_dict
 
 def load_punc():
+    """Load punctuations from some file defined in :mod:`signDDD.glo`.
+    Return a set of punctuations
+
+    """
     if not os.path.exists(PUNCS_PATH):
         return []
     puncs = set(open(PUNCS_PATH, "r").readline().strip().decode("utf8"))
@@ -95,6 +111,10 @@ def load_punc():
     return puncs
 
 def load_stopwords():
+    """Load stopwords from some file defined in :mod:`signDDD.glo`.
+    Return a list of stopwords
+
+    """
     stopwords = []
     if not os.path.exists(STOPWORDS_PATH):
         return []
@@ -105,6 +125,10 @@ def load_stopwords():
     return stopwords
 
 def gen_rand_code_dict():
+    """Generate a random hashcode map according the parameters defined
+    in :mod:`signDDD.glo`. Return a list of hashcodes.
+
+    """
     #initialize code_dict
     code_dict = []
     for comb in itertools.combinations(range(CODE_WIDTH), BIT_SET):

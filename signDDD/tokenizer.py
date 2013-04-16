@@ -29,8 +29,11 @@ class Tokenizer():
                      re.compile(r"(?i)\b(Wan)(na)\b")]
     CONTRACTIONS3 = [re.compile(r"(?i)\b(Whad)(dd)(ya)\b"),
                      re.compile(r"(?i)\b(Wha)(t)(cha)\b")]
-    
+
     def tokenize(self, text):
+        """Given a text, the function will return a list of token
+
+        """
         for regexp in self.CONTRACTIONS2:
             text = regexp.sub(r'\1 \2', text)
         for regexp in self.CONTRACTIONS3:
