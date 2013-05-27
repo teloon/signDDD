@@ -21,7 +21,7 @@ Example usage for CPU-based querying:
 
    query_lst = [u"谁的歌最好听？", u"陈奕迅的富士山下"]
    corpus_path, result_path = "corpus/zhidao_1000", "result/zhidao_1000"
-   corpus_hashcode_path = corpus_path + "_hashcodes"
+   corpus_hashcode_path = corpus_path + "_hashcode"
    gen_corpus_hashcode(corpus_path, corpus_hashcode_path, \\
                             word_hashcode_path=WORD_HASHCODE_PATH, encoding="utf8")
    execute_cpu(query_lst, corpus_hashcode_path, result_path, encoding="utf8")
@@ -34,6 +34,8 @@ from glo import CODE_WIDTH
 from glo import BIT_DIFF_THD
 from glo import INT_WIDTH
 from glo import WORD_HASHCODE_PATH
+from glo import CUDA32_PATH
+from glo import CUDA64_PATH
 from lib import pad_bin_code
 from lib import cnt_ln
 from lib import load_corpus_hashcode
@@ -51,6 +53,7 @@ def execute_gpu(query_lst, corpus_hashcode_path, output_path, encoding="utf8"):
          will be autumatically generated if not existing.
 
     """
+    print "executing queries by GPU"
     if not os.path.exists("query"):
         os.mkdir("query")
     query_path = "query/query"
@@ -59,8 +62,7 @@ def execute_gpu(query_lst, corpus_hashcode_path, output_path, encoding="utf8"):
     query_hashcode_path = "query/query_hashcode"
     gen_corpus_hashcode(query_path, query_hashcode_path, \
                             word_hashcode_path=WORD_HASHCODE_PATH, encoding="utf8")
-    #TODO: currently GPU method only supports 32bit
-    gpu_exe_fn = "cuda_int32_match" if CODE_WIDTH==32 else "cuda_int64_match"
+    gpu_exe_fn = CUDA32_PATH if CODE_WIDTH==32 else CUDA64_PATH
     cmd = "./%s %s %s %s %d %d %d" % (gpu_exe_fn, corpus_hashcode_path, query_hashcode_path, \
                                         output_path, cnt_ln(corpus_hashcode_path), \
                                                     cnt_ln(query_path), BIT_DIFF_THD)
@@ -82,6 +84,7 @@ def execute_cpu(query_lst, corpus_hashcode_path, output_path, encoding="utf8"):
          will be autumatically generated if not existing.
 
     """
+    print "executing queries by CPU"
     if not os.path.exists("query"):
         os.mkdir("query")
     query_path = "query/query"
@@ -117,16 +120,15 @@ def execute_cpu(query_lst, corpus_hashcode_path, output_path, encoding="utf8"):
 def example():
     query_lst = [u"谁的歌最好听？", u"陈奕迅的富士山下"]
     corpus_path = "corpus/zhidao_1000"
-    corpus_hashcode_path = corpus_path + "_hashcodes"
+    corpus_hashcode_path = corpus_path + "_hashcode"
     print "generating corpus hashcode"
     gen_corpus_hashcode(corpus_path, corpus_hashcode_path, \
                             word_hashcode_path=WORD_HASHCODE_PATH)
 
-    print "executing queries"
     result_path = "result/zhidao_1000"
-    execute_cpu(query_lst, corpus_hashcode_path, result_path)
-    #execute_gpu(query_lst, corpus_hashcode_path, result_path)
-    print "finished"
+    #execute_cpu(query_lst, corpus_hashcode_path, result_path)
+    execute_gpu(query_lst, corpus_hashcode_path, result_path)
+    print "finish"
 
 if __name__ == "__main__":
     example()

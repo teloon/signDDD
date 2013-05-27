@@ -27,13 +27,14 @@ void bulidSimTable(string hashcodePath, string queryPath, string resultPath, uns
 	unsigned int mem_size_query = frame_num_query * sizeof(unsigned long);//the memory size hvectors_query needed
 	unsigned int result_size = frame_num_query * MAX_SIM_NUM * sizeof(unsigned long);//the memory size which will store the result
 	unsigned int static_table_size = static_table_num * sizeof(char);
+    unsigned int cnt_size = frame_num_query * sizeof(unsigned int);
 
 
 	// Host variables
 	unsigned long* hi_index;//input data in cpu which contains all feature vectors of frames in lib
 	unsigned long* hi_query;//input data in cpu which contains all feature vectors of query frames
 	unsigned long* ho_result;//the result in host
-	unsigned long* ho_result_cnt;
+	unsigned int* ho_result_cnt;
 	char hi_static_table[256]=
 	{
 					0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
@@ -66,12 +67,12 @@ void bulidSimTable(string hashcodePath, string queryPath, string resultPath, uns
 	//allocate memory in host and device
 	hi_index = (unsigned long*) malloc(mem_size_lib);//allocate the memory to hvectors_in_lib
 	hi_query = (unsigned long*) malloc(mem_size_query);//allocate the memory to hvectors_query
-	ho_result_cnt = (unsigned long*) malloc(mem_size_query);
+	ho_result_cnt = (unsigned int*) malloc(cnt_size);
 
 	cudaMalloc((void**) &di_index, mem_size_lib);//allocate dvectors_in_lib to the device memory
 	cudaMalloc((void**) &di_query, mem_size_query);//allocate dvectors_query to the device memory
 	cudaMalloc((void**) &di_static_table, static_table_size);//allocate device_result to the device memory
-	cudaMalloc((void**) &do_result_cnt, mem_size_query);
+	cudaMalloc((void**) &do_result_cnt, cnt_size);
 
 	cudaSetDevice(0);
 	cudaSetDeviceFlags(cudaDeviceMapHost);
@@ -104,14 +105,15 @@ void bulidSimTable(string hashcodePath, string queryPath, string resultPath, uns
 	//cout<<"count = "<<cnt<<endl;
 
 
-	memset(ho_result_cnt, 0, frame_num_query*4);
+	//memset(ho_result_cnt, 0, frame_num_query*4);
+	memset(ho_result_cnt, 0, cnt_size);
 
 
 	//initalize device data
 	 cudaMemcpy(di_index, hi_index, mem_size_lib, cudaMemcpyHostToDevice);//copy hvectors_in_lib in memory to dvectors_in_lib in gpu
 	 cudaMemcpy(di_query, hi_query, mem_size_query, cudaMemcpyHostToDevice);//copy hvectors_query in memory to dvectors_query in gpu
 	 cudaMemcpy(di_static_table,hi_static_table,static_table_size,cudaMemcpyHostToDevice);
-	 cudaMemcpy(do_result_cnt, ho_result_cnt, mem_size_query, cudaMemcpyHostToDevice);
+	 cudaMemcpy(do_result_cnt, ho_result_cnt, cnt_size, cudaMemcpyHostToDevice);
 
 
 	//excute kernel in GPU
@@ -124,7 +126,7 @@ void bulidSimTable(string hashcodePath, string queryPath, string resultPath, uns
 
 	cudaThreadSynchronize();
 	//copy the result back to host memory
-	cudaMemcpy(ho_result_cnt, do_result_cnt, mem_size_query, cudaMemcpyDeviceToHost);
+	cudaMemcpy(ho_result_cnt, do_result_cnt, cnt_size, cudaMemcpyDeviceToHost);
 	cudaMemcpy(ho_result, do_result, result_size, cudaMemcpyDeviceToHost);
 
 

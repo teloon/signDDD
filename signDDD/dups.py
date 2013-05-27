@@ -21,7 +21,7 @@ Example usage for CPU-based querying:
    :linenos:
 
    corpus_path, result_path = "corpus/zhidao_1000", "result/zhidao_1000"
-   corpus_hashcode_path = corpus_path + "_hashcodes"
+   corpus_hashcode_path = corpus_path + "_hashcode"
    gen_corpus_hashcode(corpus_path, corpus_hashcode_path, \\
                         word_hashcode_path=WORD_HASHCODE_PATH, encoding="utf8")
    execute_cpu(corpus_hashcode_path, result_path, encoding="utf8")
@@ -37,6 +37,8 @@ from glo import CODE_WIDTH
 from glo import BIT_DIFF_THD
 from glo import INT_WIDTH
 from glo import WORD_HASHCODE_PATH
+from glo import CUDA32_PATH
+from glo import CUDA64_PATH
 from lib import pad_bin_code
 
 def execute_gpu(corpus_hashcode_path, output_path, encoding="utf8"):
@@ -49,12 +51,12 @@ def execute_gpu(corpus_hashcode_path, output_path, encoding="utf8"):
        :func:`signDDD.hashcode.gen_corpus_hashcode` function.
 
     """
+    print "executing queries by GPU"
     if not os.path.exists(corpus_hashcode_path):
         print "corpus hashcode path(", corpus_hashcode_path, ") not exists"
         print "generate the corpus hashcode first"
         return
-    #TODO: currently GPU method only supports 32bit
-    gpu_exe_fn = "cuda_int32_match" if CODE_WIDTH==32 else "cuda_int64_match"
+    gpu_exe_fn = CUDA32_PATH if CODE_WIDTH==32 else CUDA64_PATH
     ln_no = cnt_ln(corpus_hashcode_path)
     cmd = "./%s %s %s %s %d %d %d" % (gpu_exe_fn, corpus_hashcode_path, corpus_hashcode_path, \
                                         output_path, ln_no, ln_no, BIT_DIFF_THD)
@@ -72,6 +74,7 @@ def execute_cpu(corpus_hashcode_path, output_path, encoding="utf8"):
        :func:`signDDD.hashcode.gen_corpus_hashcode` function.
 
     """
+    print "executing queries by CPU"
     if not os.path.exists(corpus_hashcode_path):
         print "corpus hashcode path(", corpus_hashcode_path, ") not exists"
         print "generate the corpus hashcode first"
@@ -106,11 +109,10 @@ def example():
     gen_corpus_hashcode(corpus_path, corpus_hashcode_path, \
                             word_hashcode_path=WORD_HASHCODE_PATH, encoding=encoding)
 
-    print "executing queries"
     result_path = "result/zhidao_1000"
-    execute_cpu(corpus_hashcode_path, result_path, encoding=encoding)
-    #execute_gpu(corpus_hashcode_path, result_path, encoding=encoding)
-    print "finished"
+    #execute_cpu(corpus_hashcode_path, result_path, encoding=encoding)
+    execute_gpu(corpus_hashcode_path, result_path, encoding=encoding)
+    print "finish"
 
 if __name__ == "__main__":
     example()
